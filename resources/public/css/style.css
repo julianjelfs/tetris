@@ -1,4 +1,7 @@
 /* some style */
+body {
+    font-family: helvetica;
+}
 canvas {
     border: solid 1px #ccc;
 }
