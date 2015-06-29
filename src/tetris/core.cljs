@@ -1,12 +1,42 @@
 (ns ^:figwheel-always tetris.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [monet.canvas :as canvas]
+            [goog.dom :as dom]
+            [goog.events :as events]
+            [cljs.core.async :refer [<! put! chan]]
             [tetris.shapes :as shapes]))
 
 (enable-console-print!)
 
-(println "Edits to this text should show up in your developer console.")
+(def w (dom/getWindow))
+
+(def controlKeyCodes #{37 38 39 40})
+(def keyActions {37 :left
+                 39 :right
+                 40 :down
+                 38 :up})
+
+(defn controlCode [e]
+  (contains? controlKeyCodes (.-keyCode e)))
+
+(defn code->action [e]
+  (get keyActions (.-keyCode e)))
+
+(defn listen [el type]
+  (let [out (chan 1 (comp 
+                      (filter controlCode) 
+                      (map code->action)))]
+    (events/listen el type
+                   #(put! out %))
+    out))
+
+(let [presses (listen w "keydown")]
+  (go (while true
+        (prn (<! presses)))))
 
 (defonce entity-keys (atom 0))
+
+(defn now [] (.getTime (js/Date.)))
 
 (defn update-entity [val]
   (let [now (.getTime (js/Date.))
