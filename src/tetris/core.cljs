@@ -6,16 +6,26 @@
 
 (println "Edits to this text should show up in your developer console.")
 
-;; define your app data so that it doesn't get over-written on reload
+(defonce entity-keys (atom 0))
 
-(defonce app-state (atom {:text "Hello world!"}))
+(defn update-entity [val]
+  (let [now (.getTime (js/Date.))
+        updated (:updated val)
+        delta (- now updated)] 
+    (if (> delta 500)
+      (assoc val :updated now :y (+ 50 (:y val))) 
+      val)))
 
 (defn shape->entities [[px py] shape]
  (map (fn [[x y]]
-        (canvas/entity {:x (+ px (* x 50)) :y (+ py (* y 50)) :w 50 :h 50 :shape shape}
-                       nil
+        (canvas/entity {:updated (.getTime (js/Date.)) 
+                        :x (+ px (* x 50)) 
+                        :y (+ py (* y 50)) 
+                        :w 50 
+                        :h 50 
+                        :shape shape}
+                       update-entity
                        (fn [ctx val]             ; draw function
-                         (prn val)
                          (-> ctx
                              (canvas/fill-style "red")
                              (canvas/fill-rect val))))) shape))
@@ -27,8 +37,11 @@
 (defn upd-fn [val]
   (assoc val :r (inc (:r val))))
 
-(doseq [e (shape->entities [100 100] shapes/line)]
-  (canvas/add-entity mc :background e))
+
+(defn add-shape [pos shape]
+ (doseq [e (shape->entities pos shape)]
+  (canvas/add-entity mc (swap! entity-keys inc) e)))
+
 
 ; (canvas/add-entity mc :background
 ;                    (canvas/entity {:x 250 :y 250 :r 100} ; val
