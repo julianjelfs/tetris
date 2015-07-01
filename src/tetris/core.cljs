@@ -4,7 +4,8 @@
             [goog.dom :as dom]
             [goog.events :as events]
             [cljs.core.async :refer [<! put! chan]]
-            [tetris.shapes :as shapes]))
+            [tetris.shapes :as shapes]
+            [tetris.grid :as grid]))
 
 (enable-console-print!)
 
@@ -60,65 +61,17 @@
                              (canvas/fill-style "red")
                              (canvas/fill-rect val))))) shape))
 
-(def mc (canvas/init (.getElementById js/document "game") "2d"))
-
-(def ctx (canvas/get-context (.getElementById js/document "game") "2d"))
+(def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
 
 (defn upd-fn [val]
   (assoc val :r (inc (:r val))))
-
 
 (defn add-shape [pos shape]
  (doseq [e (shape->entities pos shape)]
   (canvas/add-entity mc (swap! entity-keys inc) e)))
 
-
-; (defn draw-grid [lines]
-;   (dotimes [n lines]
-;     (let [coord (* n 50)]
-;       (-> ctx 
-;           (canvas/begin-path)
-;           (canvas/stroke-style ,,, "#cccccc")
-;           (canvas/move-to ,,, coord 0)
-;           (canvas/line-to ,,, coord 700)
-;           (canvas/stroke))
-;       )))
-
-;don't know why this one works but the one above doesn't
-(defn line-from [ctx [sx sy] [ex ey]]
-  (-> ctx 
-      (canvas/move-to ,,, sx sy)
-      (canvas/line-to ,,, ex ey)))
-
-(defn draw-grid [lines dir]
-  (dotimes [n lines]
-    (let [coord (* n 50)
-          start (if (= dir :col) [coord 0] [0 coord])
-          end (if (= dir :col) [coord 700] [500 coord])]
-    (canvas/add-entity mc (str "grid-" dir n)
-                       (canvas/entity nil nil
-                                      (fn [ctx _]
-                                        (-> ctx 
-                                            canvas/begin-path
-                                            (canvas/stroke-style ,,, "#cccccc")
-                                            (line-from ,,, start end)
-                                            canvas/stroke)))))))
-
-(draw-grid 11 :col)
-(draw-grid 15 :row)
-; (add-shape [100 100] shapes/spiece)
-
-
-; (canvas/add-entity mc :background
-;                    (canvas/entity {:x 250 :y 250 :r 100} ; val
-;                                   nil                       ; update function
-;                                   (fn [ctx val]             ; draw function
-;                                     (-> ctx
-;                                         (canvas/fill-style "red")
-;                                         (canvas/circle val)
-;                                         (canvas/fill)
-;                                         ))))
-
+(grid/draw)
+(add-shape [100 100] shapes/spiece)
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
