@@ -45,8 +45,6 @@
                                   [(+ x x1) (+ y y1) (inc t)]) [0 0 0] shape)]
     [(round (/ sumy tot)) (round (/ sumx tot))]))
 
-(defn neg [v] (* -1 v))
-
 (defmulti rotate (fn [_ rot] rot))
 (defmethod rotate :ccw 
   [shape _]
@@ -54,13 +52,17 @@
       (rotate ,,, :cw)
       (rotate ,,, :cw)))
 
+; (defmethod rotate :cw 
+;   [shape _]
+;   (let [[[minx miny] [maxx maxy]] (bounds shape)
+;         [rows cols] (dimensions shape)
+;         [rC cC] (centerOfMass shape)
+;         trans (shift [(- cC) (- rC)] shape)
+;         off (if (or (= rows cols) (= rows 3)) -1 0)
+;         rt (fn [[x y]] [(- y) (+ x off)])
+;         rotated (map rt trans)]
+;     (shift [cC rC] rotated)))
+
 (defmethod rotate :cw 
   [shape _]
-  (let [[[minx miny] [maxx maxy]] (bounds shape)
-        [rows cols] (dimensions shape)
-        [rC cC] (centerOfMass shape)
-        trans (shift [(neg cC) (neg rC)] shape)
-        off (if (or (= rows cols) (= rows 3)) -1 0)
-        rt (fn [[x y]] [(neg y) (+ x off)])
-        rotated (map rt trans)]
-    (shift [cC rC] rotated)))
+  (map (fn [[x y]] [(- y) x]) shape))

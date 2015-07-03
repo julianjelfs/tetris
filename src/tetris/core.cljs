@@ -11,6 +11,10 @@
 
 (def w (dom/getWindow))
 
+(def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
+
+(defonce entity-keys (atom 0))
+
 (def controlKeyCodes #{37 38 39 40})
 (def keyActions {37 :left
                  39 :right
@@ -31,11 +35,27 @@
                    #(put! out %))
     out))
 
+(defn active-entities []
+  (let [entities (:entities mc)
+        ks (js-keys entities)
+        vals (map (fn [k] 
+                   (let [v (:value (aget entities k))]
+                     (assoc v :k k))) ks)]
+    (filter :active vals)))
+
+(defn update-active-entites [f]
+  (doseq [e (active-entities)]
+    (prn e)
+    (canvas/update-entity mc (:k e) f)))
+
 (let [presses (listen w "keydown")]
   (go (while true
-        (prn (<! presses)))))
-
-(defonce entity-keys (atom 0))
+        (let [k (<! presses)]
+          (condp = k
+            :left (update-active-entites #(assoc % :x (- 50 (:x %))))
+            :right (update-active-entites #(assoc % :x (+ 50 (:x %))))
+            :down (prn "down")
+            :rotate (prn "rotate"))))))
 
 (defn now [] (.getTime (js/Date.)))
 
@@ -43,9 +63,10 @@
   (let [now (.getTime (js/Date.))
         updated (:updated val)
         delta (- now updated)] 
-    (if (> delta 500)
-      (assoc val :updated now :y (+ 50 (:y val))) 
-      val)))
+      (if (> delta 500)
+        ; (assoc val :updated now :y (+ 50 (:y val))) 
+        val
+        val)))
 
 (defn shape->entities [[px py] shape]
  (map (fn [[x y]]
@@ -54,17 +75,13 @@
                         :y (+ py (* y 50)) 
                         :w 50 
                         :h 50 
+                        :active true
                         :shape shape}
                        update-entity
                        (fn [ctx val]             ; draw function
                          (-> ctx
                              (canvas/fill-style "red")
                              (canvas/fill-rect val))))) shape))
-
-(def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
-
-(defn upd-fn [val]
-  (assoc val :r (inc (:r val))))
 
 (defn add-shape [pos shape]
  (doseq [e (shape->entities pos shape)]
