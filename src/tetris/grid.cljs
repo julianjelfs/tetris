@@ -22,6 +22,30 @@
           (line-from ,,, start end)
           (canvas/stroke)))))
 
+(defn update-cell [grid pos f]
+  (update-in grid pos f))
+
+(defn add-shape [grid [r c] shape]
+  (doseq [s shape]
+    () ))
+
+(defn now [] (.getTime (js/Date.)))
+(def tick (atom (now)))
+(def active-shape (atom nil))
+
+(defn get-delta [] 
+ (- (now) @tick))
+
+(defn update-grid [grid]
+  (let [delta (get-delta)]
+    (when (> delta 1000)
+      ;;move the active shape down a slot
+      (prn "this should fire once per tick")
+      (swap! tick now))
+    ; (update-cell grid [7 7] (fn [_] 1))
+    grid))
+
+
 (defn draw-background [] 
   (do 
     (draw-lines 11 :col)
