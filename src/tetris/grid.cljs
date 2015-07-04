@@ -1,5 +1,9 @@
 (ns tetris.grid
-  (:require [monet.canvas :as canvas]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [monet.canvas :as canvas]
+            [tetris.control :as control]
+            [tetris.shapes :as shapes]
+            [cljs.core.async :refer [<!]]))
 
 (def grid (vec (for [r (range 14)]
                  (vec (map (fn [n] 0) (range 10))))))
@@ -22,31 +26,80 @@
           (line-from ,,, start end)
           (canvas/stroke)))))
 
-(defn update-cell [grid pos f]
-  (update-in grid pos f))
+(defn add-vectors [[x1 y1] [x2 y2]]
+  [(+ x1 x2) (+ y1 y2)])
 
-(defn add-shape [grid [r c] shape]
-  (doseq [s shape]
-    () ))
+(defonce active-shape (atom nil))
+
+(defn add-shape [pos shape]
+  (let [s (map (fn [c] 
+                 {:colour :g
+                  :pos (add-vectors pos c)}) shape)]
+    (swap! active-shape (fn [_] s))))
+
+(defn add-random-shape []
+  (add-shape [0 4] (shapes/random-shape)))
+
+(add-random-shape)
+
+(defn vectorise [dir]
+  (condp = dir
+    :left [0 -1]
+    :right [0 1]
+    :down [1 0]))
 
 (defn now [] (.getTime (js/Date.)))
 (def tick (atom (now)))
-(def active-shape (atom nil))
 
 (defn get-delta [] 
  (- (now) @tick))
 
-(defn update-grid [grid]
-  (let [delta (get-delta)]
-    (when (> delta 1000)
-      ;;move the active shape down a slot
-      (prn "this should fire once per tick")
-      (swap! tick now))
-    ; (update-cell grid [7 7] (fn [_] 1))
+(defn remove-active-shape [grid] 
+  (loop [s @active-shape
+         g grid]
+    (if (empty? s)
+        g
+        (recur (rest s) (update-in g (:pos (first s)) (fn [_] 0))))))
+
+(defn add-active-shape [grid] 
+  (loop [s @active-shape
+         g grid]
+    (if (empty? s)
+        g
+        (recur (rest s) (update-in g (:pos (first s)) (fn [_] (first s)))))))
+
+(defn shift-active-shape [grid dir]
+  (let [p (vectorise dir)]
+    (swap! active-shape (fn [shape]
+                          (map (fn [s]
+                                 (assoc s :pos (add-vectors (:pos s) p))) shape)))
     grid))
 
+(defn update-grid [grid]
+  (let [delta (get-delta)]
+    (if (> delta 300)
+      (do 
+        (swap! tick now)
+        (when @active-shape
+          (prn (str "Active Shape: " @active-shape))
+          (-> grid
+              remove-active-shape
+              (shift-active-shape ,,, :down)
+              add-active-shape)
+          ))
+      grid)))
 
 (defn draw-background [] 
   (do 
     (draw-lines 11 :col)
     (draw-lines 15 :row)))
+
+(defonce control-events (control/control-events))
+
+(go (while true
+      (let [k (<! control-events)]
+        (condp = k
+          :left (prn "left")
+          :right (prn "right")
+          :down (prn "down")
+          :rotate (prn "rotate")))))

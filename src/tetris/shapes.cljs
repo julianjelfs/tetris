@@ -12,6 +12,11 @@
 (def lpiece [[0 0] [0 1] [0 2] [1 2]])
 (def tpiece [[0 0] [1 0] [2 0] [1 1]])
 
+(def shapes [line square zpiece spiece jpiece lpiece tpiece])
+
+(defn random-shape []
+  (rand-nth shapes))
+
 (defn shift 
   "adjust a shape by the specified offset values"
   [[offx offy] shape]
