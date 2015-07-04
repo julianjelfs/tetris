@@ -13,7 +13,7 @@
 
 (def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
 
-(defonce entity-keys (atom 0))
+; (defonce entity-keys (atom 0))
 
 (def controlKeyCodes #{37 38 39 40})
 (def keyActions {37 :left
@@ -35,60 +35,81 @@
                    #(put! out %))
     out))
 
-(defn active-entities []
-  (let [entities (:entities mc)
-        ks (js-keys entities)
-        vals (map (fn [k] 
-                   (let [v (:value (aget entities k))]
-                     (assoc v :k k))) ks)]
-    (filter :active vals)))
+; (defn active-entities []
+;   (let [entities (:entities mc)
+;         ks (js-keys entities)
+;         vals (map (fn [k] 
+;                    (let [v (:value (aget entities k))]
+;                      (assoc v :k k))) ks)]
+;     (filter :active vals)))
 
-(defn update-active-entites [f]
-  (doseq [e (active-entities)]
-    (prn e)
-    (canvas/update-entity mc (:k e) f)))
+; (defn update-active-entites [f]
+;   (doseq [e (active-entities)]
+;     (prn e)
+;     (canvas/update-entity mc (:k e) f)))
 
 (let [presses (listen w "keydown")]
   (go (while true
         (let [k (<! presses)]
           (condp = k
-            :left (update-active-entites #(assoc % :x (- 50 (:x %))))
-            :right (update-active-entites #(assoc % :x (+ 50 (:x %))))
+            :left (prn "left")
+            :right (prn "right")
             :down (prn "down")
             :rotate (prn "rotate"))))))
 
 (defn now [] (.getTime (js/Date.)))
 
-(defn update-entity [val]
-  (let [now (.getTime (js/Date.))
-        updated (:updated val)
-        delta (- now updated)] 
-      (if (> delta 500)
-        ; (assoc val :updated now :y (+ 50 (:y val))) 
-        val
-        val)))
+; (defn update-entity [val]
+;   (let [now (.getTime (js/Date.))
+;         updated (:updated val)
+;         delta (- now updated)] 
+;       (if (> delta 500)
+;         ; (assoc val :updated now :y (+ 50 (:y val))) 
+;         val
+;         val)))
 
-(defn shape->entities [[px py] shape]
- (map (fn [[x y]]
-        (canvas/entity {:updated (.getTime (js/Date.)) 
-                        :x (+ px (* x 50)) 
-                        :y (+ py (* y 50)) 
-                        :w 50 
-                        :h 50 
-                        :active true
-                        :shape shape}
-                       update-entity
-                       (fn [ctx val]             ; draw function
-                         (-> ctx
-                             (canvas/fill-style "red")
-                             (canvas/fill-rect val))))) shape))
+; (defn shape->entities [[px py] shape]
+;  (map (fn [[x y]]
+;         (canvas/entity {:updated (.getTime (js/Date.)) 
+;                         :x (+ px (* x 50)) 
+;                         :y (+ py (* y 50)) 
+;                         :w 50 
+;                         :h 50 
+;                         :active true
+;                         :shape shape}
+;                        update-entity
+;                        (fn [ctx val]             ; draw function
+;                          (-> ctx
+;                              (canvas/fill-style "red")
+;                              (canvas/fill-rect val))))) shape))
 
-(defn add-shape [pos shape]
- (doseq [e (shape->entities pos shape)]
-  (canvas/add-entity mc (swap! entity-keys inc) e)))
+; (defn add-shape [pos shape]
+;  (doseq [e (shape->entities pos shape)]
+;   (canvas/add-entity mc (swap! entity-keys inc) e)))
 
-(grid/draw)
-(add-shape [100 100] shapes/spiece)
+(grid/draw-background)
+
+(defn update-grid [grid])
+
+(defn render-grid
+  "grid is a 2d vec representing each cell as filled or not by val 0 or 1"
+  [ctx grid]
+  (doseq [r (range 14)]
+    (doseq [c (range 10)]
+      (let [cell (get-in grid [r c])
+            x (* 50 c)
+            y (* 50 r)]
+        (when (= 1 cell)
+          (-> ctx
+              (canvas/begin-path)
+              (canvas/fill-style ,,, "red")
+              (canvas/fill-rect ,,, {:x x :y y :w 50 :h 50})))))))
+
+(def gridx (update-in grid/grid [5 5] inc))
+
+(canvas/add-entity mc
+                   :grid
+                   (canvas/entity gridx update-grid render-grid))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
