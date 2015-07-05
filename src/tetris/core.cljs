@@ -5,6 +5,8 @@
 
 (enable-console-print!)
 
+(grid/init)
+
 (def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
 
 (def colours {:r "red"

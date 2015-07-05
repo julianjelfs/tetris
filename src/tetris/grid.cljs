@@ -40,7 +40,8 @@
 (defn add-random-shape []
   (add-shape [0 4] (shapes/random-shape)))
 
-(add-random-shape)
+(defn init []
+  (add-random-shape))
 
 (defn vectorise [dir]
   (condp = dir
@@ -54,40 +55,33 @@
 (defn get-delta [] 
  (- (now) @tick))
 
-(defn remove-active-shape [grid] 
+(defn add-or-remove-active-shape [grid update-fn] 
   (loop [s @active-shape
          g grid]
-    (if (empty? s)
-        g
-        (recur (rest s) (update-in g (:pos (first s)) (fn [_] 0))))))
+    (if (empty? s) g
+        (recur (rest s) (update-in g (:pos (first s)) (update-fn (first s)))))))
+
+(defn remove-active-shape [grid] 
+  (add-or-remove-active-shape grid (fn [_] (fn [_] 0))))
 
 (defn add-active-shape [grid] 
-  (loop [s @active-shape
-         g grid]
-    (if (empty? s)
-        g
-        (recur (rest s) (update-in g (:pos (first s)) (fn [_] (first s)))))))
+  (add-or-remove-active-shape grid (fn [s] (fn [_] s))))
 
-(defn shift-active-shape [grid dir]
+(defn shift-active-shape [dir]
   (let [p (vectorise dir)]
     (swap! active-shape (fn [shape]
                           (map (fn [s]
-                                 (assoc s :pos (add-vectors (:pos s) p))) shape)))
-    grid))
+                                 (assoc s :pos (add-vectors (:pos s) p))) shape)))))
 
 (defn update-grid [grid]
-  (let [delta (get-delta)]
-    (if (> delta 300)
+  (let [delta (get-delta)
+        removed (remove-active-shape grid)]    
+    (when (> delta 500)
       (do 
         (swap! tick now)
         (when @active-shape
-          (prn (str "Active Shape: " @active-shape))
-          (-> grid
-              remove-active-shape
-              (shift-active-shape ,,, :down)
-              add-active-shape)
-          ))
-      grid)))
+          (shift-active-shape :down))))
+    (add-active-shape removed)))
 
 (defn draw-background [] 
   (do 
