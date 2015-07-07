@@ -1,9 +1,7 @@
 (ns tetris.grid
-  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [monet.canvas :as canvas]
             [tetris.control :as control]
-            [tetris.shapes :as shapes]
-            [cljs.core.async :refer [<!]]))
+            [tetris.shapes :as shapes]))
 
 (def grid (vec (for [r (range 14)]
                  (vec (map (fn [n] 0) (range 10))))))
@@ -75,7 +73,12 @@
 
 (defn update-grid [grid]
   (let [delta (get-delta)
-        removed (remove-active-shape grid)]    
+        removed (remove-active-shape grid)
+        kp [:left :right :down]]
+    (doseq [k kp]
+      (if (control/key-pressed? k)
+        (shift-active-shape k))) 
+    (control/reset-keys-pressed!)
     (when (> delta 500)
       (do 
         (swap! tick now)
@@ -88,12 +91,3 @@
     (draw-lines 11 :col)
     (draw-lines 15 :row)))
 
-(defonce control-events (control/control-events))
-
-(go (while true
-      (let [k (<! control-events)]
-        (condp = k
-          :left (prn "left")
-          :right (prn "right")
-          :down (prn "down")
-          :rotate (prn "rotate")))))
