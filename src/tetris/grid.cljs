@@ -71,19 +71,34 @@
                           (map (fn [s]
                                  (assoc s :pos (add-vectors (:pos s) p))) shape)))))
 
-(defn update-grid [grid]
-  (let [delta (get-delta)
-        removed (remove-active-shape grid)
-        kp [:left :right :down]]
-    (doseq [k kp]
-      (if (control/key-pressed? k)
-        (shift-active-shape k))) 
-    (control/reset-keys-pressed!)
+(defn rotate
+  [shape]
+  (map (fn [cell] 
+         (let [[x y] (:pos cell)]
+           (assoc cell :pos [(- y) x]))) shape))
+
+(defn rotate-active-shape [] 
+ (swap! active-shape rotate))
+
+(defn gravity []
+  "every half a second drop the active shape down"  
+  (let [delta (get-delta)]
     (when (> delta 500)
       (do 
         (swap! tick now)
         (when @active-shape
-          (shift-active-shape :down))))
+          (shift-active-shape :down))))))
+
+(defn update-grid [grid]
+  (let [removed (remove-active-shape grid)
+        kp [:left :right :down]]
+    (doseq [k kp]
+      (if (control/key-pressed? k)
+        (shift-active-shape k))) 
+    (when (control/key-pressed? :rotate)
+      (rotate-active-shape))
+    (control/reset-keys-pressed!)
+    (gravity)
     (add-active-shape removed)))
 
 (defn draw-background [] 
