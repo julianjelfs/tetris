@@ -1,6 +1,7 @@
 (ns ^:figwheel-always tetris.core
   (:require [monet.canvas :as canvas]
             [tetris.shapes :as shapes]
+            [tetris.colours :as colours]
             [tetris.grid :as grid]))
 
 (enable-console-print!)
@@ -8,12 +9,6 @@
 (grid/init)
 
 (def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
-
-(def colours {:r "red"
-              :b "blue"
-              :y "yellow"
-              :o "orange"
-              :g "green"})
 
 (defn now [] (.getTime (js/Date.)))
 
@@ -35,7 +30,7 @@
         (when (not (= 0 cell))
           (-> ctx
               (canvas/begin-path)
-              (canvas/fill-style ,,, ((:colour cell) colours))
+              (canvas/fill-style ,,, (colours/to-colour (:colour cell)))
               (canvas/fill-rect ,,, {:x x :y y :w 50 :h 50})))))))
 
 (canvas/add-entity mc

@@ -57,17 +57,17 @@
       (rotate ,,, :cw)
       (rotate ,,, :cw)))
 
-; (defmethod rotate :cw 
-;   [shape _]
-;   (let [[[minx miny] [maxx maxy]] (bounds shape)
-;         [rows cols] (dimensions shape)
-;         [rC cC] (centerOfMass shape)
-;         trans (shift [(- cC) (- rC)] shape)
-;         off (if (or (= rows cols) (= rows 3)) -1 0)
-;         rt (fn [[x y]] [(- y) (+ x off)])
-;         rotated (map rt trans)]
-;     (shift [cC rC] rotated)))
-
 (defmethod rotate :cw 
   [shape _]
-  (map (fn [[x y]] [(- y) x]) shape))
+  (let [[[minx miny] [maxx maxy]] (bounds shape)
+        [rows cols] (dimensions shape)
+        [rC cC] (centerOfMass shape)
+        trans (shift [(- cC) (- rC)] shape)
+        off (if (or (= rows cols) (= rows 3)) -1 0)
+        rt (fn [[x y]] [(- y) (+ x off)])
+        rotated (map rt trans)]
+    (shift [cC rC] rotated)))
+
+; (defmethod rotate :cw 
+;   [shape _]
+;   (map (fn [[x y]] [(- y) x]) shape))

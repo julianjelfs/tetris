@@ -1,6 +1,7 @@
 (ns tetris.grid
   (:require [monet.canvas :as canvas]
             [tetris.control :as control]
+            [tetris.colours :as colours]
             [tetris.shapes :as shapes]))
 
 (def grid (vec (for [r (range 14)]
@@ -29,14 +30,25 @@
 
 (defonce active-shape (atom nil))
 
-(defn add-shape [pos shape]
-  (let [s (map (fn [c] 
-                 {:colour :g
-                  :pos (add-vectors pos c)}) shape)]
-    (swap! active-shape (fn [_] s))))
+;;what should the active shape look like?
+;; { :shape
+;;   :colour 
+;;   :pos }
+
+; (defn add-shape [pos shape]
+;   (let [s (map (fn [c] 
+;                  {:colour :g
+;                   :pos (add-vectors pos c)}) shape)]
+;     (swap! active-shape (fn [_] s))))
+
+(defn add-shape [pos shape colour]
+  (swap! active-shape (fn [_]
+                        {:shape shape
+                         :colour colour
+                         :pos pos})))
 
 (defn add-random-shape []
-  (add-shape [0 4] (shapes/random-shape)))
+  (add-shape [0 4] (shapes/random-shape) (colours/random)))
 
 (defn init []
   (add-random-shape))
@@ -53,11 +65,16 @@
 (defn get-delta [] 
  (- (now) @tick))
 
+(defn transpose-cells [shape]
+  (map #(add-vectors (:pos shape) %) (:shape shape)))
+
 (defn add-or-remove-active-shape [grid update-fn] 
-  (loop [s @active-shape
-         g grid]
-    (if (empty? s) g
-        (recur (rest s) (update-in g (:pos (first s)) (update-fn (first s)))))))
+  (let [pos (:pos @active-shape)
+        colour (:colour @active-shape)]
+    (loop [cells (transpose-cells @active-shape)
+           g grid]
+      (if (empty? cells) g
+        (recur (rest cells) (update-in g (first cells) (update-fn {:colour colour})))))))
 
 (defn remove-active-shape [grid] 
   (add-or-remove-active-shape grid (fn [_] (fn [_] 0))))
@@ -67,15 +84,10 @@
 
 (defn shift-active-shape [dir]
   (let [p (vectorise dir)]
-    (swap! active-shape (fn [shape]
-                          (map (fn [s]
-                                 (assoc s :pos (add-vectors (:pos s) p))) shape)))))
+    (swap! active-shape #(assoc % :pos (add-vectors p (:pos %))))))
 
-(defn rotate
-  [shape]
-  (map (fn [cell] 
-         (let [[x y] (:pos cell)]
-           (assoc cell :pos [(- y) x]))) shape))
+(defn rotate [{:keys [shape] :as s}]
+  (assoc s :shape (shapes/rotate shape :cw)))
 
 (defn rotate-active-shape [] 
  (swap! active-shape rotate))
