@@ -30,17 +30,6 @@
 
 (defonce active-shape (atom nil))
 
-;;what should the active shape look like?
-;; { :shape
-;;   :colour 
-;;   :pos }
-
-; (defn add-shape [pos shape]
-;   (let [s (map (fn [c] 
-;                  {:colour :g
-;                   :pos (add-vectors pos c)}) shape)]
-;     (swap! active-shape (fn [_] s))))
-
 (defn add-shape [pos shape colour]
   (swap! active-shape (fn [_]
                         {:shape shape
@@ -68,50 +57,79 @@
 (defn transpose-cells [shape]
   (map #(add-vectors (:pos shape) %) (:shape shape)))
 
-(defn add-or-remove-active-shape [grid update-fn] 
-  (let [pos (:pos @active-shape)
-        colour (:colour @active-shape)]
-    (loop [cells (transpose-cells @active-shape)
+(defn add-or-remove-active-shape [grid shape update-fn] 
+  (let [pos (:pos shape)
+        colour (:colour shape)]
+    (loop [cells (transpose-cells shape)
            g grid]
       (if (empty? cells) g
         (recur (rest cells) (update-in g (first cells) (update-fn {:colour colour})))))))
 
-(defn remove-active-shape [grid] 
-  (add-or-remove-active-shape grid (fn [_] (fn [_] 0))))
+(defn remove-active-shape [grid shape] 
+  (add-or-remove-active-shape grid shape (fn [_] (fn [_] 0))))
 
-(defn add-active-shape [grid] 
-  (add-or-remove-active-shape grid (fn [s] (fn [_] s))))
+(defn add-active-shape [shape grid] 
+  (add-or-remove-active-shape grid shape (fn [s] (fn [_] s))))
 
-(defn shift-active-shape [dir]
+(defn doesnt-overlap? 
+  "does this shape overlap anything else in the grid other than itself"
+  [grid cells]
+       (prn  (apply str grid)) 
+  (not-any? #(get-in grid %) cells))
+
+(defn in-bounds? 
+  "does this shape lie within the bounds of the grid"
+  [cells]
+  (not-any? (fn [[r c]] 
+                (or (< r 0) (> r 13) (< c 0) (> c 9))) cells))
+
+(defn valid-pos? [grid shape]
+   (let [cells (transpose-cells shape)]
+     (and (in-bounds? cells) 
+          true
+          ; can't figure out why this is not working at the moment
+          ; (doesnt-overlap? grid cells)
+          )))
+
+(defn shift-active-shape [grid dir]
   (let [p (vectorise dir)]
-    (swap! active-shape #(assoc % :pos (add-vectors p (:pos %))))))
+    (swap! active-shape (fn [s]
+                          (let [shifted (assoc s :pos (add-vectors p (:pos s)))]
+                            (if (valid-pos? grid shifted) shifted s))))))
 
 (defn rotate [{:keys [shape] :as s}]
-  (assoc s :shape (shapes/rotate shape :cw)))
+  (let [rotated (assoc s :shape (shapes/rotate shape :cw))]
+    (if (in-bounds? rotated) rotated s)))
 
 (defn rotate-active-shape [] 
  (swap! active-shape rotate))
 
-(defn gravity []
+(defn gravity [orig grid]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
-    (when (> delta 500)
+    (if (> delta 500)
       (do 
         (swap! tick now)
-        (when @active-shape
-          (shift-active-shape :down))))))
+        (when (= orig (shift-active-shape grid :down))
+          ;;check for completed rows and remove them from the grid
+          ;;moving everything above that row down
+          (add-random-shape)
+          orig)) 
+      orig)))
 
 (defn update-grid [grid]
-  (let [removed (remove-active-shape grid)
+  (let [shape @active-shape
+        removed (remove-active-shape grid shape)
         kp [:left :right :down]]
     (doseq [k kp]
       (if (control/key-pressed? k)
-        (shift-active-shape k))) 
+        (shift-active-shape removed k))) 
     (when (control/key-pressed? :rotate)
       (rotate-active-shape))
     (control/reset-keys-pressed!)
-    (gravity)
-    (add-active-shape removed)))
+    (-> @active-shape
+        (gravity ,,, removed)
+        (add-active-shape ,,, removed))))
 
 (defn draw-background [] 
   (do 
