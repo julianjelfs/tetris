@@ -14,6 +14,24 @@
 
 (def shapes [line square zpiece spiece jpiece lpiece tpiece])
 
+; this sort of works to generate all possible tetrominos but 
+; it needs flattening in exactly the right way and I'm not sure how to do it
+; (defn relative-to [prev next]
+;   (if prev
+;    (let [[pr pc] prev
+;          [nr nc] next]
+;      [(+ pr nr) (+ pc nc)])
+;     next))
+
+; (defn tetrominos 
+;   "all tetrominos start at [0 0]"
+;   ([] (vec (partition 4 (partition 2 (flatten (tetrominos [[0 0]]))))))
+;   ([so-far]
+;    (if (= 4 (count so-far))
+;      so-far
+;      (for [c [[-1 0] [1 0] [0 -1] [0 1]]]
+;             (tetrominos (conj so-far (relative-to (last so-far) c)))))))
+
 (defn random-shape []
   (rand-nth shapes))
 
