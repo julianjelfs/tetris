@@ -74,7 +74,6 @@
 (defn doesnt-overlap? 
   "does this shape overlap anything else in the grid other than itself"
   [grid cells]
-       (prn  (apply str grid)) 
   (not-any? #(get-in grid %) cells))
 
 (defn in-bounds? 
@@ -88,7 +87,7 @@
      (and (in-bounds? cells) 
           true
           ; can't figure out why this is not working at the moment
-          ; (doesnt-overlap? grid cells)
+          (doesnt-overlap? grid cells)
           )))
 
 (defn shift-active-shape [grid dir]
@@ -104,11 +103,15 @@
 (defn rotate-active-shape [] 
  (swap! active-shape rotate))
 
+(defn grid-empty? [grid]
+  (every? #(= 0 %) (flatten grid)))
+
 (defn gravity [orig grid]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
     (if (> delta 500)
       (do 
+      ; (prn (str "Is the grid empty: " (grid-empty? grid)))
         (swap! tick now)
         (when (= orig (shift-active-shape grid :down))
           ;;check for completed rows and remove them from the grid
@@ -121,6 +124,7 @@
   (let [shape @active-shape
         removed (remove-active-shape grid shape)
         kp [:left :right :down]]
+      ; (prn (str "Immediately after removed: " (grid-empty? removed)))
     (doseq [k kp]
       (if (control/key-pressed? k)
         (shift-active-shape removed k))) 
