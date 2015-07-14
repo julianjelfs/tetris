@@ -4,6 +4,12 @@
             [tetris.colours :as colours]
             [tetris.shapes :as shapes]))
 
+;;ideas about completed lines
+;;count all the complete lines in the grid
+;;flatten the grid and shift each piece (* 10 count) to the right
+;;unflatten
+;;anything that is out of bounds is gone
+
 (def grid (vec (for [r (range 14)]
                  (vec (map (fn [n] 0) (range 10))))))
 
@@ -63,7 +69,7 @@
     (loop [cells (transpose-cells shape)
            g grid]
       (if (empty? cells) g
-        (recur (rest cells) (update-in g (first cells) (update-fn {:colour colour})))))))
+        (recur (rest cells) (update-in g (first cells) (update-fn shape)))))))
 
 (defn remove-active-shape [grid shape] 
   (add-or-remove-active-shape grid shape (fn [_] (fn [_] 0))))
@@ -71,10 +77,13 @@
 (defn add-active-shape [shape grid] 
   (add-or-remove-active-shape grid shape (fn [s] (fn [_] s))))
 
+(defn grid-empty? [grid]
+  (every? #(= 0 %) (flatten grid)))
+
 (defn doesnt-overlap? 
   "does this shape overlap anything else in the grid other than itself"
   [grid cells]
-  (not-any? #(get-in grid %) cells))
+  (not-any? #(not= 0 (get-in grid %)) cells))
 
 (defn in-bounds? 
   "does this shape lie within the bounds of the grid"
@@ -86,15 +95,15 @@
    (let [cells (transpose-cells shape)]
      (and (in-bounds? cells) 
           true
-          ; can't figure out why this is not working at the moment
-          (doesnt-overlap? grid cells)
-          )))
+          (doesnt-overlap? grid cells))))
 
 (defn shift-active-shape [grid dir]
-  (let [p (vectorise dir)]
-    (swap! active-shape (fn [s]
-                          (let [shifted (assoc s :pos (add-vectors p (:pos s)))]
-                            (if (valid-pos? grid shifted) shifted s))))))
+  (let [p (vectorise dir)
+        s @active-shape
+        shifted (assoc s :pos (add-vectors p (:pos s)))]
+    (if (valid-pos? grid shifted)
+      (swap! active-shape (fn [_] shifted))
+      s)))
 
 (defn rotate [{:keys [shape] :as s}]
   (let [rotated (assoc s :shape (shapes/rotate shape :cw))]
@@ -103,28 +112,25 @@
 (defn rotate-active-shape [] 
  (swap! active-shape rotate))
 
-(defn grid-empty? [grid]
-  (every? #(= 0 %) (flatten grid)))
 
 (defn gravity [orig grid]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
     (if (> delta 500)
       (do 
-      ; (prn (str "Is the grid empty: " (grid-empty? grid)))
         (swap! tick now)
-        (when (= orig (shift-active-shape grid :down))
-          ;;check for completed rows and remove them from the grid
-          ;;moving everything above that row down
-          (add-random-shape)
-          orig)) 
+        (let [shifted (shift-active-shape grid :down)]
+          (when (= orig shifted)
+            ;;check for completed rows and remove them from the grid
+            ;;moving everything above that row down
+            (add-random-shape)
+            orig))) 
       orig)))
 
 (defn update-grid [grid]
   (let [shape @active-shape
         removed (remove-active-shape grid shape)
         kp [:left :right :down]]
-      ; (prn (str "Immediately after removed: " (grid-empty? removed)))
     (doseq [k kp]
       (if (control/key-pressed? k)
         (shift-active-shape removed k))) 
