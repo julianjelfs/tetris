@@ -10,6 +10,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]]
 
   :plugins [[lein-cljsbuild "1.0.5"]
+            [com.cemerick/clojurescript.test "0.3.3"]
             [lein-figwheel "0.3.3"]]
 
   :source-paths ["src"]
@@ -18,7 +19,7 @@
   
   :cljsbuild {
     :builds [{:id "dev"
-              :source-paths ["src"]
+              :source-paths ["src" "test"]
 
               :figwheel { :on-jsload "tetris.core/on-js-reload" }
 
