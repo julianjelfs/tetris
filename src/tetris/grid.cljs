@@ -4,12 +4,6 @@
             [tetris.colours :as colours]
             [tetris.shapes :as shapes]))
 
-;;ideas about completed lines
-;;count all the complete lines in the grid
-;;flatten the grid and shift each piece (* 10 count) to the right
-;;unflatten
-;;anything that is out of bounds is gone
-
 (def grid (vec (for [r (range 14)]
                  (vec (map (fn [n] 0) (range 10))))))
 
@@ -30,6 +24,20 @@
           (canvas/stroke-style ,,, "#cccccc")
           (line-from ,,, start end)
           (canvas/stroke)))))
+
+(defn row-complete? [row]
+ (not-any? #(= 0 %) row))
+
+(defn count-complete-rows [grid]
+  (count (filter row-complete? grid)))
+
+(defn remove-complete-rows [grid]
+ (let [complete (* 10 (count-complete-rows grid))]
+  (if (> complete 0)
+    (let [f (flatten grid)
+          l (count f)]
+      (vec (map vec (partition 10 (take l (concat (repeatedly complete (fn [] 0)) f))))))
+    grid)))
 
 (defn add-vectors [[x1 y1] [x2 y2]]
   [(+ x1 x2) (+ y1 y2)])
@@ -63,7 +71,7 @@
 (defn transpose-cells [shape]
   (map #(add-vectors (:pos shape) %) (:shape shape)))
 
-(defn add-or-remove-active-shape [grid shape update-fn] 
+(defn add-or-remove-shape [grid shape update-fn] 
   (let [pos (:pos shape)
         colour (:colour shape)]
     (loop [cells (transpose-cells shape)
@@ -71,11 +79,11 @@
       (if (empty? cells) g
         (recur (rest cells) (update-in g (first cells) (update-fn shape)))))))
 
-(defn remove-active-shape [grid shape] 
-  (add-or-remove-active-shape grid shape (fn [_] (fn [_] 0))))
+(defn remove-shape-from-grid [grid shape] 
+  (add-or-remove-shape grid shape (fn [_] (fn [_] 0))))
 
-(defn add-active-shape [shape grid] 
-  (add-or-remove-active-shape grid shape (fn [s] (fn [_] s))))
+(defn add-shape-to-grid [shape grid] 
+  (add-or-remove-shape grid shape (fn [s] (fn [_] s))))
 
 (defn grid-empty? [grid]
   (every? #(= 0 %) (flatten grid)))
@@ -105,12 +113,12 @@
       (swap! active-shape (fn [_] shifted))
       s)))
 
-(defn rotate [{:keys [shape] :as s}]
+(defn rotate [{:keys [shape] :as s} grid]
   (let [rotated (assoc s :shape (shapes/rotate shape :cw))]
-    (if (in-bounds? rotated) rotated s)))
+    (if (valid-pos? grid rotated) rotated s)))
 
-(defn rotate-active-shape [] 
- (swap! active-shape rotate))
+(defn rotate-active-shape [grid] 
+ (swap! active-shape rotate grid))
 
 
 (defn gravity [orig grid]
@@ -120,26 +128,27 @@
       (do 
         (swap! tick now)
         (let [shifted (shift-active-shape grid :down)]
-          (when (= orig shifted)
-            ;;check for completed rows and remove them from the grid
-            ;;moving everything above that row down
-            (add-random-shape)
-            orig))) 
+          (if (= orig shifted)
+            (do
+              (when (not= 0 (first (:pos orig)))
+                (add-random-shape))
+              orig)
+            shifted))) 
       orig)))
 
 (defn update-grid [grid]
-  (let [shape @active-shape
-        removed (remove-active-shape grid shape)
+  (let [removed (remove-shape-from-grid grid @active-shape)
         kp [:left :right :down]]
     (doseq [k kp]
       (if (control/key-pressed? k)
         (shift-active-shape removed k))) 
     (when (control/key-pressed? :rotate)
-      (rotate-active-shape))
+      (rotate-active-shape removed))
     (control/reset-keys-pressed!)
     (-> @active-shape
         (gravity ,,, removed)
-        (add-active-shape ,,, removed))))
+        (add-shape-to-grid ,,, removed)
+        remove-complete-rows)))
 
 (defn draw-background [] 
   (do 
