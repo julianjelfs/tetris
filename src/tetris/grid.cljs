@@ -31,13 +31,14 @@
 (defn count-complete-rows [grid]
   (count (filter row-complete? grid)))
 
-(defn remove-complete-rows [grid]
- (let [complete (* 10 (count-complete-rows grid))]
-  (if (> complete 0)
-    (let [f (flatten grid)
-          l (count f)]
-      (vec (map vec (partition 10 (take l (concat (repeatedly complete (fn [] 0)) f))))))
-    grid)))
+(defn empty-row [r]
+  (into [] (map (fn [_] 0) r)))
+
+(defn remove-complete-rows 
+  "removes completed rows and then adds them to the front of the grid zerod out"
+  [grid]
+  (let [[complete not-complete] ((juxt filter remove) row-complete? grid)]
+    (into [] (concat (map empty-row complete) not-complete))))
 
 (defn add-vectors [[x1 y1] [x2 y2]]
   [(+ x1 x2) (+ y1 y2)])
@@ -120,7 +121,6 @@
 (defn rotate-active-shape [grid] 
  (swap! active-shape rotate grid))
 
-
 (defn gravity [orig grid]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
@@ -137,7 +137,7 @@
       orig)))
 
 (defn update-grid [grid]
-  (let [removed (remove-shape-from-grid grid @active-shape)
+  (let [removed (remove-complete-rows (remove-shape-from-grid grid @active-shape))
         kp [:left :right :down]]
     (doseq [k kp]
       (if (control/key-pressed? k)
@@ -147,8 +147,7 @@
     (control/reset-keys-pressed!)
     (-> @active-shape
         (gravity ,,, removed)
-        (add-shape-to-grid ,,, removed)
-        remove-complete-rows)))
+        (add-shape-to-grid ,,, removed))))
 
 (defn draw-background [] 
   (do 
