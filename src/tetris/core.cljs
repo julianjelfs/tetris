@@ -2,6 +2,7 @@
   (:require [monet.canvas :as canvas]
             [tetris.shapes :as shapes]
             [tetris.colours :as colours]
+            [tetris.sound :as sound]
             [tetris.grid :as grid]))
 
 (enable-console-print!)
@@ -36,6 +37,8 @@
 (canvas/add-entity mc
                    :grid
                    (canvas/entity grid/grid update-grid render-grid))
+
+(sound/play)
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
