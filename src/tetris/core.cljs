@@ -21,7 +21,7 @@
   (grid/update-grid grid))
 
 (defn draw-square [ctx colour x y]
-  (let [size 50
+  (let [size 46
         radius 3
         sx (+ size x)
         rx (+ radius x)
@@ -52,7 +52,7 @@
             x (* 50 c)
             y (* 50 r)]
         (when (not (= 0 cell))
-          (draw-square ctx (colours/to-colour (:colour cell)) x y))))))
+          (draw-square ctx (colours/to-colour (:colour cell)) (+ 2 x) (+ 2 y)))))))
 
 (canvas/add-entity mc
                    :grid

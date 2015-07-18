@@ -21,7 +21,7 @@
           end (if (= dir :col) [coord 700] [500 coord])]
       (-> ctx 
           (canvas/begin-path)
-          (canvas/stroke-style ,,, "#cccccc")
+          (canvas/stroke-style ,,, "#dddddd")
           (line-from ,,, start end)
           (canvas/stroke)))))
 
