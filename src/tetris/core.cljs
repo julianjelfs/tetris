@@ -20,6 +20,29 @@
   [grid]
   (grid/update-grid grid))
 
+(defn draw-square [ctx colour x y]
+  (let [size 50
+        radius 3
+        sx (+ size x)
+        rx (+ radius x)
+        sy (+ size y)
+        ry (+ radius y)]
+ (-> ctx
+     (canvas/begin-path)
+     (canvas/move-to ,,, rx y)
+     (canvas/line-to ,,, (- sx radius) y)
+     (canvas/quadratic-curve-to ,,, sx y sx ry)
+     (canvas/line-to ,,, sx (- sy radius))
+     (canvas/quadratic-curve-to ,,, sx sy (- sx radius) sy)
+     (canvas/line-to ,,, rx sy)
+     (canvas/quadratic-curve-to ,,, x sy x (- sy radius))
+     (canvas/line-to ,,, x ry)
+     (canvas/quadratic-curve-to ,,, x y rx y)
+     (canvas/close-path)
+     (canvas/stroke)
+     (canvas/fill-style colour)
+     (canvas/fill))))
+
 (defn render-grid
   "grid is a 2d vec representing each cell as filled or not by val 0 or 1"
   [ctx grid]
@@ -29,10 +52,7 @@
             x (* 50 c)
             y (* 50 r)]
         (when (not (= 0 cell))
-          (-> ctx
-              (canvas/begin-path)
-              (canvas/fill-style ,,, (colours/to-colour (:colour cell)))
-              (canvas/fill-rect ,,, {:x x :y y :w 50 :h 50})))))))
+          (draw-square ctx (colours/to-colour (:colour cell)) x y))))))
 
 (canvas/add-entity mc
                    :grid
