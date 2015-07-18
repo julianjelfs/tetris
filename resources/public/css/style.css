@@ -23,3 +23,8 @@ canvas {
     z-index : 1;
 }
 
+.player {
+	position:absolute;
+	top:-300px;
+}
+

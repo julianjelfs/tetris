@@ -124,7 +124,7 @@
 (defn gravity [orig grid]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
-    (if (> delta 500)
+    (if (> delta 400)
       (do 
         (swap! tick now)
         (let [shifted (shift-active-shape grid :down)]
