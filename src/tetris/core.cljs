@@ -1,15 +1,22 @@
 (ns ^:figwheel-always tetris.core
   (:require [monet.canvas :as canvas]
             [tetris.shapes :as shapes]
+            [goog.dom :as dom]
+            [goog.events :as events]
+            [goog.dom.classes :as classes]
             [tetris.colours :as colours]
-            [tetris.sound :as sound]
             [tetris.grid :as grid]))
 
 (enable-console-print!)
 
-(grid/init)
+(def start-btn (dom/getElement "start"))
 
-(def mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
+(events/listen start-btn "click"
+               (fn [_]
+                 (grid/init)
+                 (classes/add start-btn "hidden")))
+
+(defonce mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
 
 (defn now [] (.getTime (js/Date.)))
 
@@ -57,8 +64,6 @@
 (canvas/add-entity mc
                    :grid
                    (canvas/entity grid/grid update-grid render-grid))
-
-(sound/play)
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on

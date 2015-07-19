@@ -3,6 +3,8 @@
 (def colours {:r "red"
               :b "blue"
               :y "yellow"
+              :p "purple"
+              :pk "pink"
               :o "orange"
               :g "green"})
 

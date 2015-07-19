@@ -45,14 +45,14 @@
 
 (defonce active-shape (atom nil))
 
-(defn add-shape [pos shape colour]
+(defn add-shape [pos [shape colour]]
   (swap! active-shape (fn [_]
                         {:shape shape
                          :colour colour
                          :pos pos})))
 
 (defn add-random-shape []
-  (add-shape [0 4] (shapes/random-shape) (colours/random)))
+  (add-shape [0 4] (shapes/random-shape)))
 
 (defn init []
   (add-random-shape))

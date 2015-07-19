@@ -12,7 +12,7 @@
 (def lpiece [[0 0] [0 1] [0 2] [1 2]])
 (def tpiece [[0 0] [1 0] [2 0] [1 1]])
 
-(def shapes [line square zpiece spiece jpiece lpiece tpiece])
+(def shapes [[line :r] [square :b] [zpiece :o] [spiece :y] [jpiece :g] [lpiece :p] [tpiece :pk]])
 
 ; this sort of works to generate all possible tetrominos but 
 ; it needs flattening in exactly the right way and I'm not sure how to do it
