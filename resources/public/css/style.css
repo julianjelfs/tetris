@@ -43,3 +43,16 @@ canvas {
     display : none;
 }
 
+.col {
+    width : 200px;
+    float:left;
+}
+
+.clearfix {
+    clear : both;
+} 
+
+.score {
+    color : red;
+    font-weight: bold;
+}

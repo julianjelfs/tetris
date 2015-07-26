@@ -1,8 +1,11 @@
 (ns tetris.grid
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [monet.canvas :as canvas]
             [tetris.control :as control]
             [tetris.colours :as colours]
-            [tetris.shapes :as shapes]))
+            [tetris.score :as score]
+            [tetris.shapes :as shapes]
+            [cljs.core.async :refer [<! put! chan]]))
 
 (def grid (vec (for [r (range 14)]
                  (vec (map (fn [n] 0) (range 10))))))
@@ -38,6 +41,7 @@
   "removes completed rows and then adds them to the front of the grid zerod out"
   [grid]
   (let [[complete not-complete] ((juxt filter remove) row-complete? grid)]
+    (put! score/score-chan (count complete))
     (into [] (concat (map empty-row complete) not-complete))))
 
 (defn add-vectors [[x1 y1] [x2 y2]]
