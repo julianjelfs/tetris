@@ -8,36 +8,29 @@
             [goog.style :as style]
             [tetris.colours :as colours]
             [tetris.grid :as grid]
+            [tetris.score :as score]
             [cljs.core.async :refer [<! put! chan]]))
 
 (enable-console-print!)
 
 (def start-btn (dom/getElement "start"))
 (def restart-btn (dom/getElement "restart"))
+(def foreground (dom/getElement "game-foreground"))
 
 (events/listen start-btn "click"
                (fn [_]
                  (grid/init)
                  (classes/add start-btn "hidden")))
 
-(defonce mc (canvas/init (.getElementById js/document "game-foreground") "2d"))
-
-(defn now [] (.getTime (js/Date.)))
-
-(def game-over-chan (chan))
+(defonce mc (canvas/init foreground "2d"))
 
 (grid/draw-background)
 
+(def game-over-chan (chan))
 (defn update-grid 
   "delegate updating the grid to the grid ns"
   [grid]
   (grid/update-grid grid game-over-chan))
-
-(go (while true
-      (when (<! game-over-chan)
-        (style/setStyle restart-btn "display" "block")
-        ; (canvas/restart mc)
-        (prn "game over dude"))))
 
 (defn draw-square [ctx colour x y]
   (let [size 46
@@ -73,9 +66,23 @@
         (when (not (= 0 cell))
           (draw-square ctx (colours/to-colour (:colour cell)) (+ 2 x) (+ 2 y)))))))
 
-(canvas/add-entity mc
+(defn start []
+ (canvas/add-entity mc
                    :grid
-                   (canvas/entity grid/grid update-grid render-grid))
+                   (canvas/entity grid/grid update-grid render-grid)))
+
+(start)
+
+(events/listen restart-btn "click"
+               (fn [_]
+                 (score/reset!)
+                 (canvas/remove-entity mc :grid)
+                 (start)
+                 (classes/add restart-btn "hidden")))
+
+(go (while true
+      (when (<! game-over-chan)
+        (classes/remove restart-btn "hidden"))))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on

@@ -31,12 +31,14 @@ canvas {
 .msg {
     position:absolute;
     top:360px;
-    left:210px;
+    width:500px;
+    text-align:center;
     z-index:10;
 }
 
 .msg button {
     font-size:2em;
+    box-shadow: 5px 5px 20px #000;
 }
 
 .msg button.hidden {

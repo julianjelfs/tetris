@@ -6,7 +6,10 @@
 (def score-chan (chan))
 (def score (dom/getElementByClass "score"))
 
-(dom/setTextContent score "0")
+(defn reset! [] 
+  (dom/setTextContent score "0"))
+
+(reset!)
 
 (go (while true
       (let [completed (<! score-chan)]
