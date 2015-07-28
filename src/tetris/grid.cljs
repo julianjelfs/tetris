@@ -125,7 +125,7 @@
 (defn rotate-active-shape [grid] 
  (swap! active-shape rotate grid))
 
-(defn gravity [orig grid]
+(defn gravity [orig grid game-over-chan]
   "every half a second drop the active shape down"  
   (let [delta (get-delta)]
     (if (> delta 400)
@@ -134,13 +134,14 @@
         (let [shifted (shift-active-shape grid :down)]
           (if (= orig shifted)
             (do
-              (when (not= 0 (first (:pos orig)))
-                (add-random-shape))
+              (if (not= 0 (first (:pos orig)))
+                (add-random-shape)
+                (put! game-over-chan "Game over!"))
               orig)
             shifted))) 
       orig)))
 
-(defn update-grid [grid]
+(defn update-grid [grid game-over-chan]
   (let [removed (remove-complete-rows (remove-shape-from-grid grid @active-shape))
         kp [:left :right :down]]
     (doseq [k kp]
@@ -150,7 +151,7 @@
       (rotate-active-shape removed))
     (control/reset-keys-pressed!)
     (-> @active-shape
-        (gravity ,,, removed)
+        (gravity ,,, removed game-over-chan)
         (add-shape-to-grid ,,, removed))))
 
 (defn draw-background [] 

@@ -1,15 +1,19 @@
 (ns ^:figwheel-always tetris.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [monet.canvas :as canvas]
             [tetris.shapes :as shapes]
             [goog.dom :as dom]
             [goog.events :as events]
             [goog.dom.classes :as classes]
+            [goog.style :as style]
             [tetris.colours :as colours]
-            [tetris.grid :as grid]))
+            [tetris.grid :as grid]
+            [cljs.core.async :refer [<! put! chan]]))
 
 (enable-console-print!)
 
 (def start-btn (dom/getElement "start"))
+(def restart-btn (dom/getElement "restart"))
 
 (events/listen start-btn "click"
                (fn [_]
@@ -20,12 +24,20 @@
 
 (defn now [] (.getTime (js/Date.)))
 
+(def game-over-chan (chan))
+
 (grid/draw-background)
 
 (defn update-grid 
   "delegate updating the grid to the grid ns"
   [grid]
-  (grid/update-grid grid))
+  (grid/update-grid grid game-over-chan))
+
+(go (while true
+      (when (<! game-over-chan)
+        (style/setStyle restart-btn "display" "block")
+        ; (canvas/restart mc)
+        (prn "game over dude"))))
 
 (defn draw-square [ctx colour x y]
   (let [size 46
